@@ -1,43 +1,81 @@
 import java.util.*;
-class AddOnService {
-    String serviceName;
-    double cost;
 
-    public AddOnService(String serviceName, double cost) {
-        this.serviceName = serviceName;
-        this.cost = cost;
+/**
+ * Use Case 10 - Booking Cancellation & Inventory Rollback
+ */
+
+// Reservation class
+class Reservation {
+    String reservationId;
+    String roomType;
+
+    public Reservation(String reservationId, String roomType) {
+        this.reservationId = reservationId;
+        this.roomType = roomType;
     }
 }
 
-// Manager class to handle services
-class AddOnServiceManager {
+// Inventory class
+class RoomInventory {
+    private Map<String, Integer> inventory = new HashMap<>();
 
-    // Map<ReservationID, List of Services>
-    private Map<String, List<AddOnService>> serviceMap = new HashMap<>();
-
-    public void addService(String reservationId, AddOnService service) {
-        serviceMap.putIfAbsent(reservationId, new ArrayList<>());
-        serviceMap.get(reservationId).add(service);
+    public RoomInventory() {
+        inventory.put("Single", 1);
+        inventory.put("Double", 1);
+        inventory.put("Suite", 1);
     }
 
-    public void displayServices(String reservationId) {
-        List<AddOnService> services = serviceMap.get(reservationId);
+    public void increase(String roomType) {
+        inventory.put(roomType, inventory.getOrDefault(roomType, 0) + 1);
+    }
 
-        if (services == null || services.isEmpty()) {
-            System.out.println("No add-on services selected.");
+    public void decrease(String roomType) {
+        inventory.put(roomType, inventory.getOrDefault(roomType, 0) - 1);
+    }
+
+    public void display() {
+        System.out.println("Inventory: " + inventory);
+    }
+}
+
+// Cancellation Service
+class CancellationService {
+
+    private Map<String, Reservation> bookings = new HashMap<>();
+    private Stack<String> rollbackStack = new Stack<>();
+    private RoomInventory inventory;
+
+    public CancellationService(RoomInventory inventory) {
+        this.inventory = inventory;
+    }
+
+    // Add booking (simulate confirmed booking)
+    public void addBooking(Reservation r) {
+        bookings.put(r.reservationId, r);
+        inventory.decrease(r.roomType);
+    }
+
+    // Cancel booking
+    public void cancelBooking(String reservationId) {
+
+        if (!bookings.containsKey(reservationId)) {
+            System.out.println("Invalid cancellation. Reservation not found.");
             return;
         }
 
-        System.out.println("Services for Reservation: " + reservationId);
+        Reservation r = bookings.remove(reservationId);
 
-        double totalCost = 0;
+        // Push to rollback stack
+        rollbackStack.push(reservationId);
 
-        for (AddOnService s : services) {
-            System.out.println(s.serviceName + " - ₹" + s.cost);
-            totalCost += s.cost;
-        }
+        // Restore inventory
+        inventory.increase(r.roomType);
 
-        System.out.println("Total Add-On Cost: ₹" + totalCost);
+        System.out.println("Cancelled reservation: " + reservationId);
+    }
+
+    public void showRollbackStack() {
+        System.out.println("Rollback Stack: " + rollbackStack);
     }
 }
 
@@ -46,23 +84,23 @@ public class BookMyStayApp {
 
     public static void main(String[] args) {
 
-        // Create manager
-        AddOnServiceManager manager = new AddOnServiceManager();
+        RoomInventory inventory = new RoomInventory();
+        CancellationService service = new CancellationService(inventory);
 
-        // Sample reservation ID
-        String reservationId = "RES101";
+        // Simulate bookings
+        service.addBooking(new Reservation("RES101", "Single"));
+        service.addBooking(new Reservation("RES102", "Double"));
 
-        // Create services
-        AddOnService breakfast = new AddOnService("Breakfast", 500);
-        AddOnService wifi = new AddOnService("WiFi", 200);
-        AddOnService pickup = new AddOnService("Airport Pickup", 1000);
+        inventory.display();
 
-        // Add services to reservation
-        manager.addService(reservationId, breakfast);
-        manager.addService(reservationId, wifi);
-        manager.addService(reservationId, pickup);
+        // Cancel booking
+        service.cancelBooking("RES101");
 
-        // Display services and total cost
-        manager.displayServices(reservationId);
+        inventory.display();
+
+        // Invalid cancel
+        service.cancelBooking("RES999");
+
+        service.showRollbackStack();
     }
 }
