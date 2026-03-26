@@ -1,47 +1,68 @@
-import java.util.HashMap;
-import java.util.Scanner;
+import java.util.*;
+class AddOnService {
+    String serviceName;
+    double cost;
 
-class RoomInventory {
-
-    HashMap<String, Integer> rooms = new HashMap<>();
-
-    public void addRoom(String type, int count) {
-        rooms.put(type, count);
-    }
-
-    public void searchRoom(String type) {
-        if (rooms.containsKey(type)) {
-            System.out.println(type + " rooms available: " + rooms.get(type));
-        } else {
-            System.out.println("Room type not found");
-        }
-    }
-
-    public void bookRoom(String type) {
-        if (rooms.containsKey(type) && rooms.get(type) > 0) {
-            rooms.put(type, rooms.get(type) - 1);
-            System.out.println("Booking Confirmed for " + type + " room");
-        } else {
-            System.out.println("Room not available");
-        }
+    public AddOnService(String serviceName, double cost) {
+        this.serviceName = serviceName;
+        this.cost = cost;
     }
 }
 
+// Manager class to handle services
+class AddOnServiceManager {
+
+    // Map<ReservationID, List of Services>
+    private Map<String, List<AddOnService>> serviceMap = new HashMap<>();
+
+    public void addService(String reservationId, AddOnService service) {
+        serviceMap.putIfAbsent(reservationId, new ArrayList<>());
+        serviceMap.get(reservationId).add(service);
+    }
+
+    public void displayServices(String reservationId) {
+        List<AddOnService> services = serviceMap.get(reservationId);
+
+        if (services == null || services.isEmpty()) {
+            System.out.println("No add-on services selected.");
+            return;
+        }
+
+        System.out.println("Services for Reservation: " + reservationId);
+
+        double totalCost = 0;
+
+        for (AddOnService s : services) {
+            System.out.println(s.serviceName + " - ₹" + s.cost);
+            totalCost += s.cost;
+        }
+
+        System.out.println("Total Add-On Cost: ₹" + totalCost);
+    }
+}
+
+// Main Class
 public class BookMyStayApp {
 
     public static void main(String[] args) {
 
-        Scanner sc = new Scanner(System.in);
-        RoomInventory inventory = new RoomInventory();
+        // Create manager
+        AddOnServiceManager manager = new AddOnServiceManager();
 
-        inventory.addRoom("Single", 5);
-        inventory.addRoom("Double", 3);
-        inventory.addRoom("Suite", 2);
+        // Sample reservation ID
+        String reservationId = "RES101";
 
-        System.out.println("Enter room type to book:");
-        String type = sc.nextLine();
+        // Create services
+        AddOnService breakfast = new AddOnService("Breakfast", 500);
+        AddOnService wifi = new AddOnService("WiFi", 200);
+        AddOnService pickup = new AddOnService("Airport Pickup", 1000);
 
-        inventory.searchRoom(type);
-        inventory.bookRoom(type);
+        // Add services to reservation
+        manager.addService(reservationId, breakfast);
+        manager.addService(reservationId, wifi);
+        manager.addService(reservationId, pickup);
+
+        // Display services and total cost
+        manager.displayServices(reservationId);
     }
 }
